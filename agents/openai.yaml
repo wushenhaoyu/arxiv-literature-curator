@@ -1,0 +1,3 @@
+interface:
+  display_name: "arXiv Literature Curator"
+  short_description: "Search arXiv, screen papers, and import selected ones into Zotero with PDFs."

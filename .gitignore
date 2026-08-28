@@ -1,0 +1,14 @@
+# Runtime outputs
+output/
+
+# Local environment
+.DS_Store
+.env
+*.local
+
+# Node
+node_modules/
+
+# Editor
+.idea/
+.vscode/
