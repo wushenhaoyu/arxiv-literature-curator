@@ -2,8 +2,6 @@
 
 一个面向博士/科研工作站的 arXiv 论文收集小流水线：自动检索论文、按研究画像筛选、生成中英双语审批报告，然后只把人工批准的论文导入 Zotero 并自动分类、抓取 PDF。
 
-当前默认配置面向 **AI for HPC / CUDA 算子优化**，适合跟踪 GPU kernel、CUDA、Triton、TVM、MLIR、auto-tuning、GEMM、Tensor Core、LLM for Systems 等方向。
-
 ## 能做什么
 
 - 从 arXiv 按关键词组合和分类检索最新论文。
