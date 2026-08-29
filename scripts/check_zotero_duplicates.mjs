@@ -27,6 +27,43 @@ function getExistingArxivIds() {
   }
 }
 
+function normalizeTitle(title) {
+  return String(title || "")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function findItems(query) {
+  try {
+    const raw = execSync(`${ZOTERO_CLI} --json item find ${JSON.stringify(query)} --limit 20`, { encoding: "utf8", timeout: 30000 });
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : parsed?.items || parsed?.data || [];
+  } catch {
+    return [];
+  }
+}
+
+function itemField(item, name) {
+  return item?.[name] || item?.data?.[name] || item?.fields?.[name] || "";
+}
+
+function hasMatchingZoteroItem(paper, existingIds) {
+  if (existingIds.has(paper.arxiv_id)) return true;
+  const title = normalizeTitle(paper.title);
+  if (!title) return false;
+  const candidates = findItems(paper.title);
+  return candidates.some(item => {
+    const doi = itemField(item, "DOI");
+    const url = itemField(item, "url");
+    const itemTitle = normalizeTitle(itemField(item, "title") || item.title);
+    return doi.toLowerCase().includes(String(paper.arxiv_id).toLowerCase())
+      || url.toLowerCase().includes(String(paper.arxiv_id).toLowerCase())
+      || itemTitle === title;
+  });
+}
+
 function main() {
   const args = process.argv.slice(2);
   const inputPath = args.find(a => a.startsWith("--input="))?.split("=")[1];
@@ -39,8 +76,9 @@ function main() {
 
   const data = JSON.parse(readFileSync(inputPath, "utf8"));
   const existing = getExistingArxivIds();
-  const newPapers = data.papers.filter(p => !existing.has(p.arxiv_id));
-  const duplicates = data.papers.filter(p => existing.has(p.arxiv_id));
+  const duplicateFlags = new Map(data.papers.map(p => [p.arxiv_id, hasMatchingZoteroItem(p, existing)]));
+  const newPapers = data.papers.filter(p => !duplicateFlags.get(p.arxiv_id));
+  const duplicates = data.papers.filter(p => duplicateFlags.get(p.arxiv_id));
 
   const result = { ...data, deduped_at: new Date().toISOString(), total_original: data.papers.length, total_new: newPapers.length, total_duplicates: duplicates.length, new_papers: newPapers, duplicates };
   writeFileSync(outputPath, JSON.stringify(result, null, 2));

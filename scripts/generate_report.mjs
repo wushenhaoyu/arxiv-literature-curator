@@ -6,17 +6,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = resolve(__dirname, "..");
 
 function relevanceScore(paper, keywords) {
-  let score = 0;
-  const text = `${paper.title} ${paper.abstract}`.toLowerCase();
-  for (const kw of keywords) {
-    const escaped = kw.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const count = (text.match(new RegExp(escaped, "g")) || []).length;
-    score += count;
-  }
-  for (const kw of keywords) {
-    if (paper.title.toLowerCase().includes(kw.toLowerCase())) score += 3;
-  }
-  return score;
+  return (Number(paper.keywords_matched) || 0) * 2 + (Array.isArray(paper.required_hits) ? paper.required_hits.length : 0) * 5;
 }
 
 function main() {
@@ -33,14 +23,16 @@ function main() {
   const configPath = resolve(SKILL_ROOT, "config", "research_profile.json");
   const config = existsSync(configPath) ? JSON.parse(readFileSync(configPath, "utf8")) : { keywords: [] };
   const keywords = [...(config.keywords || []), ...(config.required_keywords || [])];
+  const minScore = Number(config.min_display_score) || 0;
 
-  const papers = data.new_papers || data.papers || [];
+  const papers = (data.new_papers || data.papers || []).filter(p => relevanceScore(p, keywords) >= minScore);
   papers.sort((a, b) => relevanceScore(b, keywords) - relevanceScore(a, keywords));
 
   let md = `# arXiv 文献日报\n\n`;
   md += `**检索时间**: ${data.queried_at}\n`;
   md += `**检索词**: \`${keywords.join("`, `")}\`\n`;
-  md += `**新论文数**: ${papers.length}\n\n`;
+  md += `**展示门槛**: 相关度 >= ${minScore}\n`;
+  md += `**候选论文数**: ${papers.length}\n\n`;
   md += `| # | 英文标题 | 作者 | 日期 | arXiv ID | 相关度 |\n`;
   md += `|---|---------|-----|------|---------|------|\n`;
 

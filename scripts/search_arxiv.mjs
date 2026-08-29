@@ -39,11 +39,11 @@ function buildQuery(config) {
     : config.keywords.map(k => [k]);
   const groupParts = groups.map(g => {
     const terms = g.map(k => `(ti:"${k.replace(/"/g, "\\\"")}" OR abs:"${k.replace(/"/g, "\\\"")}")`);
-    return `(${terms.join("+AND+")})`;
+    return `(${terms.join(" AND ")})`;
   });
-  const query = groupParts.join("+OR+");
-  const cats = config.categories.map(c => `cat:${c}`).join("+OR+");
-  return `(${query})+AND+(${cats})`;
+  const query = groupParts.join(" OR ");
+  const cats = config.categories.map(c => `cat:${c}`).join(" OR ");
+  return `(${query}) AND (${cats})`;
 }
 
 function extract(xml, tag) {
@@ -52,7 +52,7 @@ function extract(xml, tag) {
 }
 
 function fetchXml(url) {
-  return execFileSync("curl", ["-s", "--max-time", "40", url], { encoding: "utf8", timeout: 45000 });
+  return execFileSync("curl", ["-s", "--max-time", "80", "-A", "codex-arxiv-literature-curator/1.0", url], { encoding: "utf8", timeout: 85000 });
 }
 
 function normalizeId(value) {

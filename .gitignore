@@ -1,5 +1,9 @@
 # Runtime outputs
 output/
+outputs/
+work/
+task_plan.md
+notes.md
 
 # Local environment
 .DS_Store

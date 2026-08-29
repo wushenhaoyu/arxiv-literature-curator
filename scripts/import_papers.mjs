@@ -62,10 +62,6 @@ function ensureCollection(tree, config, path, dryRun, createdLog, resolvedKeys) 
       current = existing;
       continue;
     }
-    if (existing) {
-      current = existing;
-      continue;
-    }
     if (!config.zotero_collections?.create_missing_collections) {
       return { key: null, missing: name };
     }
