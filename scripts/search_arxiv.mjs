@@ -52,7 +52,7 @@ function extract(xml, tag) {
 }
 
 function fetchXml(url) {
-  return execFileSync("curl", ["-s", "--max-time", "80", "-A", "codex-arxiv-literature-curator/1.0", url], { encoding: "utf8", timeout: 85000 });
+  return execFileSync("curl", ["-s", "--max-time", "80", "-A", "codex-arxiv-literature-curator/1.0", url], { encoding: "utf8", timeout: 85000, maxBuffer: 32 * 1024 * 1024 });
 }
 
 function normalizeId(value) {

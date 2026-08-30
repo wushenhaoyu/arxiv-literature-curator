@@ -57,7 +57,10 @@ function ensureCollection(tree, config, path, dryRun, createdLog, resolvedKeys) 
   let current = null;
   for (let i = 0; i < path.length; i++) {
     const name = path[i];
-    const existing = chooseCandidate(tree, path, i);
+    const all = flattenTree(tree).filter(n => n.collectionName === name);
+    const existing = current
+      ? all.find(n => n.parentKey === current.key)
+      : chooseCandidate(tree, path, i);
     if (existing && (!current || existing.parentKey === current.key)) {
       current = existing;
       continue;
@@ -78,10 +81,14 @@ function ensureCollection(tree, config, path, dryRun, createdLog, resolvedKeys) 
   return { key: current?.key || null, missing: null };
 }
 
-function resolveCollection(tree, config, name, dryRun, createdLog) {
+function resolveCollection(tree, config, name, dryRun, createdLog, resolvedCache) {
   const path = hierarchyPath(config, name);
   if (!path) return { key: null, missing: "no_hierarchy" };
-  return ensureCollection(tree, config, path, dryRun, createdLog);
+  const cacheKey = path.join(" > ");
+  if (resolvedCache.has(cacheKey)) return { key: resolvedCache.get(cacheKey), missing: null };
+  const resolved = ensureCollection(tree, config, path, dryRun, createdLog);
+  if (resolved.key) resolvedCache.set(cacheKey, resolved.key);
+  return resolved;
 }
 
 function routePaper(paper, config, forcedCollection) {
@@ -129,13 +136,14 @@ function main() {
 
   const tree = runJson(`${ZOTERO_CLI} --json collection tree`);
   const createdLog = [];
+  const resolvedCache = new Map();
   const results = [];
 
   for (const paper of papers) {
     const id = paper.arxiv_id;
     if (!id) continue;
     const targetName = routePaper(paper, config, forcedCollection);
-    const resolved = resolveCollection(tree, config, targetName, dryRun, createdLog);
+    const resolved = resolveCollection(tree, config, targetName, dryRun, createdLog, resolvedCache);
     if (resolved.missing) {
       results.push({ arxiv_id: id, ok: false, error: `missing_collection: ${targetName} (${resolved.missing})` });
       continue;
